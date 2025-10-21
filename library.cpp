@@ -2,6 +2,7 @@
 #include <algorithm>
 
 #include "library.h"
+#include "logger.h"
 
 using namespace std;
 
@@ -11,6 +12,9 @@ Library::Library() {}
 // Add book to library
 void Library::addBook(const Book& book) {
     books.push_back(make_unique<Book>(book));
+    if (g_logger) {
+        g_logger->logInfo("Livre ajouté: " + book.getTitle() + " (ISBN: " + book.getISBN() + ")");
+    }
 }
 
 // Remove book from library
@@ -22,6 +26,9 @@ bool Library::removeBook(const string& isbn) {
     
     if (it != books.end()) {
         books.erase(it);
+        if (g_logger) {
+            g_logger->logInfo("Livre supprimé: " + isbn);
+        }
         return true;
     }
     return false;
@@ -91,6 +98,30 @@ vector<Book*> Library::getAllBooks() {
     return allBooks;
 }
 
+// Sort a vector of Book* by title (case-insensitive)
+void Library::sortBookPointersByTitle(vector<Book*>& bookPtrs, bool ascending) {
+    auto cmp = [ascending](const Book* a, const Book* b) {
+        string ta = a->getTitle();
+        string tb = b->getTitle();
+        transform(ta.begin(), ta.end(), ta.begin(), ::tolower);
+        transform(tb.begin(), tb.end(), tb.begin(), ::tolower);
+        return ascending ? (ta < tb) : (ta > tb);
+    };
+    sort(bookPtrs.begin(), bookPtrs.end(), cmp);
+}
+
+// Sort a vector of Book* by author (case-insensitive)
+void Library::sortBookPointersByAuthor(vector<Book*>& bookPtrs, bool ascending) {
+    auto cmp = [ascending](const Book* a, const Book* b) {
+        string aa = a->getAuthor();
+        string ab = b->getAuthor();
+        transform(aa.begin(), aa.end(), aa.begin(), ::tolower);
+        transform(ab.begin(), ab.end(), ab.begin(), ::tolower);
+        return ascending ? (aa < ab) : (aa > ab);
+    };
+    sort(bookPtrs.begin(), bookPtrs.end(), cmp);
+}
+
 // Add user to library
 void Library::addUser(const User& user) {
     users.push_back(make_unique<User>(user));
@@ -123,7 +154,13 @@ bool Library::checkOutBook(const string& isbn, const string& userId) {
     if (book && user && book->getAvailability()) {
         book->checkOut(user->getName());
         user->borrowBook(isbn);
+        if (g_logger) {
+            g_logger->logInfo("Livre emprunté: ISBN=" + isbn + " par utilisateur=" + user->getUserId());
+        }
         return true;
+    }
+    if (g_logger) {
+        g_logger->logWarning("Échec emprunt: ISBN=" + isbn + " par utilisateur=" + userId);
     }
     return false;
 }
@@ -141,7 +178,13 @@ bool Library::returnBook(const string& isbn) {
             }
         }
         book->returnBook();
+        if (g_logger) {
+            g_logger->logInfo("Livre retourné: ISBN=" + isbn);
+        }
         return true;
+    }
+    if (g_logger) {
+        g_logger->logWarning("Échec retour: ISBN=" + isbn);
     }
     return false;
 }
@@ -202,3 +245,27 @@ int Library::getAvailableBookCount() const {
         });
 }
 int Library::getCheckedOutBookCount() const { return getTotalBooks() - getAvailableBookCount(); }
+
+// Permanent sort of internal books vector by title (case-insensitive)
+void Library::sortBooksByTitle(bool ascending) {
+    auto cmp = [ascending](const unique_ptr<Book>& a, const unique_ptr<Book>& b) {
+        string ta = a->getTitle();
+        string tb = b->getTitle();
+        transform(ta.begin(), ta.end(), ta.begin(), ::tolower);
+        transform(tb.begin(), tb.end(), tb.begin(), ::tolower);
+        return ascending ? (ta < tb) : (ta > tb);
+    };
+    sort(books.begin(), books.end(), cmp);
+}
+
+// Permanent sort of internal books vector by author (case-insensitive)
+void Library::sortBooksByAuthor(bool ascending) {
+    auto cmp = [ascending](const unique_ptr<Book>& a, const unique_ptr<Book>& b) {
+        string aa = a->getAuthor();
+        string ab = b->getAuthor();
+        transform(aa.begin(), aa.end(), aa.begin(), ::tolower);
+        transform(ab.begin(), ab.end(), ab.begin(), ::tolower);
+        return ascending ? (aa < ab) : (aa > ab);
+    };
+    sort(books.begin(), books.end(), cmp);
+}

@@ -4,6 +4,7 @@
 
 #include "library.h"
 #include "filemanager.h"
+#include "logger.h"
 
 using namespace std;
 
@@ -32,6 +33,7 @@ void displayMenu() {
     cout << "11. Statistiques de la Bibliothèque\n";
     cout << "12. Sauvegarder les Données\n";
     cout << "13. Créer une Sauvegarde\n";
+    cout << "14. Trier la librairie\n";
     cout << "0.  Quitter\n";
     cout << "======================================================\n";
     cout << "Entrez votre choix : ";
@@ -47,6 +49,9 @@ string getInput(const string& prompt) {
 int main() {
     Library library;
     FileManager fileManager;
+    // Initialize global logger
+    g_logger = new Logger("bibliotheque.log", true, true, true);
+    g_logger->logInfo("Application démarrée");
     
     // Load existing data
     cout << "Chargement des données de la bibliothèque...\n";
@@ -222,10 +227,48 @@ int main() {
                 break;
             }
             
+            case 14: { // Sort library
+                cout << "Choisissez le critère de tri : (1) Titre, (2) Auteur : ";
+                int crit = 1;
+                if (!(cin >> crit)) {
+                    cout << "Entrée invalide. Annulation.\n";
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    break;
+                }
+                cout << "Ordre : (1) Ascendant, (2) Descendant : ";
+                int ord = 1;
+                if (!(cin >> ord)) {
+                    cout << "Entrée invalide. Annulation.\n";
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    break;
+                }
+                cin.ignore();
+
+                bool ascending = (ord == 1);
+                if (crit == 1) {
+                    library.sortBooksByTitle(ascending);
+                } else {
+                    library.sortBooksByAuthor(ascending);
+                }
+
+                cout << "Librairie triée. Affichage des livres :\n";
+                library.displayAllBooks();
+                pauseForInput();
+                break;
+            }
+            
             case 0: // Exit
                 cout << "Sauvegarde des données avant la fermeture...\n";
                 fileManager.saveLibraryData(library);
                 cout << "Merci d'avoir utilisé le Système de Gestion de Bibliothèque Personnelle !\n";
+                if (g_logger) {
+                    g_logger->logInfo("Application arrêtée");
+                    g_logger->save();
+                    delete g_logger;
+                    g_logger = nullptr;
+                }
                 running = false;
                 break;
             

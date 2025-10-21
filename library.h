@@ -42,6 +42,14 @@ public:
     void displayAvailableBooks();
     void displayAllUsers();
     
+    // Permanent sorting of internal collection
+    void sortBooksByTitle(bool ascending = true);
+    void sortBooksByAuthor(bool ascending = true);
+
+    // Sorting helpers for result vectors (useful to sort search results before display)
+    void sortBookPointersByTitle(vector<Book*>& bookPtrs, bool ascending = true);
+    void sortBookPointersByAuthor(vector<Book*>& bookPtrs, bool ascending = true);
+    
     // Statistics
     int getTotalBooks() const;
     int getAvailableBookCount() const;
